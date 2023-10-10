@@ -135,14 +135,23 @@ if __name__ == "__main__":
     cmdline = get_executable_from_command_line(executable)
     print(f"CMDLINE: {cmdline}")
 
-    executable = 'cmd.exe'
-    is_lolbin = get_if_lolbin(executable)
-    print(f"IsLolbin? {is_lolbin}")
+    executable2 = 'cmd.exe'
+    is_lolbin = get_if_lolbin(executable2)
+    print(f"is_lolbin? {is_lolbin}")
 
     certificate_info = find_certificate_info(cmdline)
-    print(f"CertInfo: {certificate_info}")
+    print(f"certificate_info: {certificate_info}")
 
     is_builtin_binary = get_if_builtin_binary(cmdline)
-    print(f"IsBuiltInBinary: {is_builtin_binary}")
+    print(f"is_builtin_binary: {is_builtin_binary}")
+
+    is_safe_executable = get_if_safe_executable(executable)
+    print(f"is_safe_executable: {is_safe_executable}")
+
+    library = 'C:\Windows\System32\crypt32.dll'
+    is_safe_library = get_if_safe_library(library)
+    print(f"is_safe_library: {is_safe_library}")
+
     exit(0)
+
 # end main
