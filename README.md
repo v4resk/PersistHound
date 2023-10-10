@@ -2,7 +2,7 @@
   <br>
   <a href="https://github.com/v4resk/PersistHound/"><img src="https://i.imgur.com/t81dlNk.png" width=260 height=260 alt="PersistHound"></a>
 </h1>
-<h4 align="center">Command and Control</h4>
+<h4 align="center">Persistence Hunting</h4>
 <p align="center">
   <a href="https://github.com/v4resk/PersistHound/">
     <img src="https://shields.io/badge/Language-Python-blue?&style=for-the-badge">
@@ -16,7 +16,7 @@
 # PersistHound
 **PersistHound** is a Python script designed to help Blue Teams, Incident Responders, and System Administrators detect and eliminate persistence mechanisms in Windows systems. This tool provides an arsenal of detection techniques to proactively track down and neutralize potential threats, enhancing the security of your Windows environment.
 
-# How to run ?
+# How to run it ?
 First install dependencies
 ```powershell
 python -m pip install -r requirements.txt
@@ -84,4 +84,4 @@ python PersistHound.py
 - Suborner Technique ❌
 
 # Credits
-This project was largely inspired by [PersistenceSniper](https://github.com/last-byte/PersistenceSniper), a valuable tool in the field of persistence hunting for Windows systems. We extend our gratitude to the creators and contributors of PersistenceSniper for their pioneering work, which served as a significant inspiration for PersistHound.
+This project is juste a python adaptation of the [PersistenceSniper](https://github.com/last-byte/PersistenceSniper) project. I extend my gratitude to the creators and contributors of PersistenceSniper for their pioneering work, which served as a significant inspiration.
