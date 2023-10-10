@@ -1,6 +1,8 @@
 import subprocess
 import re
 import os
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 
 def new_persistence_object(
     hostname=None, technique=None, classification=None, path=None,
@@ -49,10 +51,6 @@ def get_executable_from_command_line(path_name):
 
     return executable
 
-def find_certificate_info(executable):
-        #TO DO
-        return "Unknown error occurred"
-
 def get_if_lolbin(executable):
     # To get an updated list of lolbins 
     # curl https://lolbas-project.github.io/# | grep -E "bin-name\">(.*)\.exe<" -o | cut -d ">" -f 2 | cut -d "<" -f 1 
@@ -92,8 +90,29 @@ def get_if_lolbin(executable):
     
     return False
 
+def find_certificate_info(executable):
+    try:
+        powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").SignerCertificate.Subject"'
+        subject = subprocess.check_output(powershell_command, shell=True, text=True).strip()
+
+        powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").Status"'
+        status = subprocess.check_output(powershell_command, shell=True, text=True).strip()
+
+        formatted_string = f"Status = {status}, Subject = {subject}"
+        return formatted_string
+
+    except subprocess.CalledProcessError as e:
+        return "Unknown error occurred"
+
 def get_if_builtin_binary(executable):
-        #TO DO
+    try:
+        powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").IsOSBinary"'
+        result = subprocess.check_output(powershell_command, shell=True, text=True).strip()
+
+        # If the PowerShell command returns 'True', it's a built-in binary; otherwise, it's not.
+        return result.lower() == 'true'
+
+    except Exception as e:
         return False
     
 def get_if_safe_executable(executable):
@@ -111,10 +130,19 @@ def get_if_safe_library(dll_full_path):
 
 if __name__ == "__main__":
     executable = 'cmd.exe /c echo Hello, World!'
-    cmdlineIs = get_executable_from_command_line(executable)
-    print(cmdlineIs)
+    print(f"Full CMD: {executable}")
+
+    cmdline = get_executable_from_command_line(executable)
+    print(f"CMDLINE: {cmdline}")
+
     executable = 'cmd.exe'
     is_lolbin = get_if_lolbin(executable)
-    print(is_lolbin)
+    print(f"IsLolbin? {is_lolbin}")
+
+    certificate_info = find_certificate_info(cmdline)
+    print(f"CertInfo: {certificate_info}")
+
+    is_builtin_binary = get_if_builtin_binary(cmdline)
+    print(f"IsBuiltInBinary: {is_builtin_binary}")
     exit(0)
 # end main
