@@ -1,8 +1,10 @@
 import subprocess
 import re
 import os
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
+import ctypes
+import winreg
+
+
 
 def new_persistence_object(
     hostname=None, technique=None, classification=None, path=None,
@@ -128,6 +130,137 @@ def get_if_safe_library(dll_full_path):
     else:
         return False
 
+def parse_net_user():
+        return 0
+
+
+
+def get_registry_key_values(hive, subkey):
+    try:
+        # Open the registry key for reading
+        print(type(hive))
+        print(type(subkey))
+        key = winreg.OpenKey(hive, subkey, 0, winreg.KEY_READ)
+
+        values = {}
+        index = 0
+
+        # Iterate through the values in the registry key
+        while True:
+            try:
+                name, data, value_type = winreg.EnumValue(key, index)
+                values[name] = (data, value_type)
+                index += 1
+            except FileNotFoundError:
+                break
+
+        winreg.CloseKey(key)
+        return values
+    except FileNotFoundError:
+        return {}
+    
+def get_run_and_runOnce():
+    for hive in system_and_users_hives:
+        # Define the registry subkey paths for Run and RunOnce
+        run_subkey = r"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+        run_once_subkey = r"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce"
+
+        # Retrieve the values in the Run subkey using the provided function
+        run_values = get_registry_key_values(hive, run_subkey)
+        run_once_values = get_registry_key_values(hive, run_once_subkey)
+
+        # Define the access based on the current hive
+        if hive in ['HKEY_LOCAL_MACHINE', 'HKEY_USERS\S-1-5-18', 'HKEY_USERS\S-1-5-19', 'HKEY_USERS\S-1-5-20']:
+            access = 'System'
+        else:
+            access = 'User'
+
+        # Process Run values
+        for name, (data, value_type) in run_values.items():
+
+            if not get_if_safe_executable(data):
+                # Call new_persistence_object to create a persistence object
+                persistence_object = new_persistence_object(
+                    hostname=hostname,
+                    technique='Registry Run Key' if "Run" in run_subkey else 'Registry RunOnce Key',
+                    classification='MITRE ATT&CK T1547.001',
+                    path=run_subkey + '\\' + name,
+                    value=data,
+                    access_gained=access,
+                    note='Executables in properties of the key (HKLM|HKEY_USERS<SID>)\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run are run when the user logs in or when the machine boots up (in the case of the HKLM hive).',
+                    reference='https://attack.mitre.org/techniques/T1547/001/'
+                )
+                persistence_object_array.append(persistence_object)
+                persistence_object_to_string(persistence_object)
+
+        # Process RunOnce values
+        for name, (data, value_type) in run_once_values.items():
+
+            if not get_if_safe_executable(data):
+                # Call new_persistence_object to create a persistence object
+                persistence_object = new_persistence_object(
+                    hostname=hostname,
+                    technique='Registry Run Key' if "Run" in run_once_subkey else 'Registry RunOnce Key',
+                    classification='MITRE ATT&CK T1547.001',
+                    path=run_once_subkey + '\\' + name,
+                    value=data,
+                    access_gained=access,
+                    note='Executables in properties of the key (HKLM|HKEY_USERS<SID>)\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run are run when the user logs in or when the machine boots up (in the case of the HKLM hive).',
+                    reference='https://attack.mitre.org/techniques/T1547/001/'
+                )
+                persistence_object_array.append(persistence_object)
+                persistence_object_to_string(persistence_object)
+
+        print('')  # Add a newline between Run and RunOnce
+
+def persistence_object_to_string(persistence_objects):
+        print("Hostname:", persistence_objects['Hostname'])
+        print("Technique:", persistence_objects['Technique'])
+        print("Classification:", persistence_objects['Classification'])
+        print("Path:", persistence_objects['Path'])
+        print("Value:", persistence_objects['Value'])
+        print("Access Gained:", persistence_objects['Access Gained'])
+        print("Note:", persistence_objects['Note'])
+        print("Reference:", persistence_objects['Reference'])
+        print("Signature:", persistence_objects['Signature'])
+        print("IsBuiltinBinary:", persistence_objects['IsBuiltinBinary'])
+        print("IsLolbin:", persistence_objects['IsLolbin'])
+        print()  # Add a newline between objects
+
+
+def get_all_hives():
+    try:
+        hku_key = winreg.HKEY_USERS
+        index = 0
+        while True:
+            try:
+                sid_key_name = winreg.EnumKey(hku_key, index)
+                sid_key = winreg.OpenKey(hku_key, sid_key_name)
+                system_and_users_hives.append(sid_key)
+                index += 1
+            except FileNotFoundError:
+                break
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+#Global vars
+persistence_object_array = []
+hostname = os.environ.get('COMPUTERNAME')
+
+#REG
+hklm_key = winreg.HKEY_LOCAL_MACHINE
+hku_key = winreg.HKEY_USERS
+
+
+system_and_users_hives = [hklm_key]
+
+
+#Update system_and_users_hives
+get_all_hives()
+
+
+
+
 if __name__ == "__main__":
     executable = 'cmd.exe /c echo Hello, World!'
     print(f"Full CMD: {executable}")
@@ -152,6 +285,14 @@ if __name__ == "__main__":
     is_safe_library = get_if_safe_library(library)
     print(f"is_safe_library: {is_safe_library}")
 
-    exit(0)
+    print(f"Hostname: {hostname}")
+
+    print("hives: ")
+    for hive in system_and_users_hives:
+        print(hive)
+
+    get_run_and_runOnce()
+
+
 
 # end main
