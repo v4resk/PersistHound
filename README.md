@@ -31,9 +31,13 @@ python PersistHound.py
 
 # Persistence Techniques Detected
 
-- Run Key ❌
-- RunOnce Key ❌
-- Image File Execution Options ❌
+- [Run Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
+- [RunOnce Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
+- [RunOnceEx Key](https://red.infiltr8.io/windows/persistence/registry/run-keys) ❌
+- [RunServices Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
+- [RunServicesOnce Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
+- [Windows policy Settings Run Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
+- [Image File Execution Options](https://red.infiltr8.io/windows/persistence/registry/image-file-execution-options) ❌
 - Natural Language Development Platform 6 DLL Override Path ❌
 - AEDebug Keys ❌
 - Windows Error Reporting Debugger ❌
@@ -78,8 +82,6 @@ python PersistHound.py
 - Office AI.exe Hijacking ❌
 - Explorer Context Menu Hijacking ❌
 - Service Control Manager Security Descriptor Manipulation ❌
-- RunEx Key ❌
-- RunOnceEx Key ❌
 - RID Hijacking ❌
 - Suborner Technique ❌
 
