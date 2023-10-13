@@ -54,6 +54,8 @@ def get_executable_from_command_line(path_name):
     return executable
 
 def get_if_lolbin(executable):
+    if executable == None:
+        return None
     # To get an updated list of lolbins 
     # curl https://lolbas-project.github.io/# | grep -E "bin-name\">(.*)\.exe<" -o | cut -d ">" -f 2 | cut -d "<" -f 1 
     lolbins = [
@@ -93,12 +95,14 @@ def get_if_lolbin(executable):
     return False
 
 def find_certificate_info(executable):
+    if executable == None:
+        return None
     try:
         powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").SignerCertificate.Subject"'
-        subject = subprocess.check_output(powershell_command, shell=True, text=True).strip()
+        subject = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None ).strip()
 
         powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").Status"'
-        status = subprocess.check_output(powershell_command, shell=True, text=True).strip()
+        status = subprocess.check_output(powershell_command, shell=True, text=True ,stderr=None).strip()
 
         formatted_string = f"Status = {status}, Subject = {subject}"
         return formatted_string
@@ -107,6 +111,8 @@ def find_certificate_info(executable):
         return "Unknown error occurred"
 
 def get_if_builtin_binary(executable):
+    if executable == None:
+        return None
     try:
         powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").IsOSBinary"'
         result = subprocess.check_output(powershell_command, shell=True, text=True).strip()
@@ -153,94 +159,6 @@ def get_registry_key_values(hive,sid,key_name):
         # Handle other exceptions
         pass
     return values
-    
-def get_run_keys_persistence():
-    note='Executables in properties of the (HKLM|HKEY_USERS<SID>) Run keys are used when the user logs in or when the machine boots up (in the case of the HKLM hive).'
-    reference='https://attack.mitre.org/techniques/T1547/001/'
-    technique='Registry Run Keys'
-    classification='MITRE ATT&CK T1547.001'
-
-    #Subkeys
-    ## Run & RunOnce
-    run_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\Run'
-    run_once_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunOnce'
-    run_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\Run'
-    run_once_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-    ## RunServices & RunServicesOnce
-    run_services_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunServices'
-    run_services_once_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunServicesOnce'
-    run_services_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunServices'
-    run_services_once_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunServicesOnce'
-    ## policy settings
-    run_policies_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run'
-    run_policies_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run'
-    #Hives
-    hklm_key = winreg.HKEY_LOCAL_MACHINE
-    hku_key = winreg.HKEY_USERS
-
-    #HKLM Run & RunOnce
-    get_registry_persistence(hklm_key,run_subkey_sys,technique,classification,note,reference)
-    get_registry_persistence(hklm_key,run_once_subkey_sys,technique,classification,note,reference)
-
-    #HKU Run & RunOnce
-    get_registry_persistence(hku_key,run_subkey_u,technique,classification,note,reference)
-    get_registry_persistence(hku_key,run_once_subkey_u,technique,classification,note,reference)
-
-    #HKLM RunServices & RunServicesOnce
-    get_registry_persistence(hklm_key,run_services_subkey_sys,technique,classification,note,reference)
-    get_registry_persistence(hklm_key,run_services_once_subkey_sys,technique,classification,note,reference)
-
-    #HKU RunServices & RunServicesOnce
-    get_registry_persistence(hku_key,run_services_subkey_u,technique,classification,note,reference)
-    get_registry_persistence(hku_key,run_services_once_subkey_u,technique,classification,note,reference)
-    
-    #HKU & HKLM Run policy settings
-    get_registry_persistence(hklm_key,run_policies_subkey_sys,technique,classification,note,reference)
-    get_registry_persistence(hku_key,run_policies_subkey_u,technique,classification,note,reference)
-
-    get_persistence_for_runonceex()
-
-
-def get_persistence_for_runonceex():
-
-    note='Executables in properties of the (HKLM|HKEY_USERS<SID>) Run keys are used when the user logs in or when the machine boots up (in the case of the HKLM hive).'
-    reference='https://attack.mitre.org/techniques/T1547/001/'
-    technique='Registry Run Keys'
-    classification='MITRE ATT&CK T1547.001'
-
-    runonceex_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
-    runonceex_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
-    hklm_key = winreg.HKEY_LOCAL_MACHINE
-    hku_key = winreg.HKEY_USERS
-
-    #get_registry_persistence(hku_key,runonceex_subkey_u,technique,classification,note,reference)
-
-    #HKLM
-    try:
-        key_index = 0
-        while True:
-            RunOnceEx_key = winreg.OpenKey(hklm_key, runonceex_subkey_sys)
-            key_name = winreg.EnumKey(RunOnceEx_key, key_index)
-            final_key =  f"{runonceex_subkey_sys}\\{key_name}"
-            get_registry_persistence(hklm_key,final_key,technique,classification,note,reference)
-            key_index += 1
-    except Exception:
-        pass
-    
-    #HKU may be useless and currently not optimised
-    for sid in users_sids:
-        try:
-            key_index = 0
-            while True:
-                RunOnceEx_key = winreg.OpenKey(hku_key, sid+runonceex_subkey_u)
-                key_name = winreg.EnumKey(RunOnceEx_key, key_index)
-                final_key =  f"{runonceex_subkey_u}\\{key_name}"
-                get_registry_persistence(hku_key,final_key,technique,classification,note,reference)
-                key_index += 1
-        except Exception:
-            pass
-    
-
 
 
 def get_registry_persistence(hive,subkey,technique,classification,note,reference):
@@ -295,7 +213,206 @@ def get_registry_persistence(hive,subkey,technique,classification,note,reference
                                 persistence_object_array.append(PersistenceObject)
     except Exception:
         pass                       
-                    
+
+
+def get_persistence_for_runonceex():
+
+    sys_sids = ['S-1-5-18', 'S-1-5-19', 'S-1-5-20']
+
+    note='Executables in properties of the (HKLM|HKEY_USERS<SID>) Run keys are used when the user logs in or when the machine boots up (in the case of the HKLM hive).'
+    reference='https://attack.mitre.org/techniques/T1547/001/'
+    technique='Registry Run Keys'
+    classification='MITRE ATT&CK T1547.001'
+
+    runonceex_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
+    runonceex_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
+    hklm_key = winreg.HKEY_LOCAL_MACHINE
+    hku_key = winreg.HKEY_USERS
+
+    depend_to_check = {}
+
+    #get_registry_persistence(hku_key,runonceex_subkey_u,technique,classification,note,reference)
+
+    #HKLM
+    try:
+        key_index = 0
+        while True:
+            RunOnceEx_key = winreg.OpenKey(hklm_key, runonceex_subkey_sys)
+            key_name = winreg.EnumKey(RunOnceEx_key, key_index)
+            final_key =  f"{runonceex_subkey_sys}\\{key_name}"
+            get_registry_persistence(hklm_key,final_key,technique,classification,note,reference)
+            try:
+                final_key_depend = f"{final_key}\\Depend"
+                runonceex_values_depend = get_registry_key_values(hklm_key, None, final_key_depend)
+                if runonceex_values_depend:
+                        for name, data in runonceex_values_depend.items():
+                            propPath = f"HKLM\\{runonceex_subkey_sys}\\{key_name}\\Depend\\{name}"
+                            #if not get_if_safe_executable(data):
+                            if True:
+                                # Create a new persistence_object
+                                PersistenceObject = new_persistence_object(
+                                hostname=hostname,
+                                technique=technique,
+                                classification=classification,
+                                path=propPath,
+                                value=data,
+                                access_gained=access,
+                                note=note,
+                                reference=reference
+                                )
+                                persistence_object_array.append(PersistenceObject)
+            except Exception:
+                pass    
+            key_index += 1
+    except Exception:
+        pass
+    
+    #HKU may be useless
+    #Check for RunOnceEx on HKU
+    for sid in users_sids:
+        if sid in sys_sids:
+            access = "System"
+        else:
+            access = "User"
+
+        try:
+            key_index = 0
+            while True:    
+
+                RunOnceEx_key = winreg.OpenKey(hku_key, sid+runonceex_subkey_u)
+                key_name = winreg.EnumKey(RunOnceEx_key, key_index)
+                final_key = f"{runonceex_subkey_u}\\{key_name}"
+                runonceex_values = get_registry_key_values(hku_key, sid, final_key)
+                if runonceex_values:
+                    for name, data in runonceex_values.items():
+                        propPath = f"HKU\\{sid}{runonceex_subkey_u}\\{key_name}\\{name}"
+                        #if not get_if_safe_executable(data):
+                        if True:
+                            # Create a new persistence_object
+                            PersistenceObject = new_persistence_object(
+                                hostname=hostname,
+                                technique=technique,
+                                classification=classification,
+                                path=propPath,
+                                value=data,
+                                access_gained=access,
+                                note=note,
+                                reference=reference
+                            )
+                            persistence_object_array.append(PersistenceObject)
+                try:
+                    final_key_depend = f"{final_key}\\Depend"
+                    runonceex_values_depend = get_registry_key_values(hku_key, sid, final_key_depend)
+                    if runonceex_values_depend:
+                        for name, data in runonceex_values_depend.items():
+                            propPath = f"HKU\\{sid}{runonceex_subkey_u}\\{key_name}\\Depend\\{name}"
+                            #if not get_if_safe_executable(data):
+                            if True:
+                                # Create a new persistence_object
+                                PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=propPath,
+                                    value=data,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                                )
+                                persistence_object_array.append(PersistenceObject)
+                except Exception:
+                    pass
+                key_index += 1
+        except Exception:
+                pass
+        
+
+    
+    
+def get_run_keys_persistence():
+    note='Executables in properties of the (HKLM|HKEY_USERS<SID>) Run keys are used when the user logs in or when the machine boots up (in the case of the HKLM hive).'
+    reference='https://attack.mitre.org/techniques/T1547/001/'
+    technique='Registry Run Keys'
+    classification='MITRE ATT&CK T1547.001'
+
+    #Subkeys
+    ## Run & RunOnce
+    run_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\Run'
+    run_once_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunOnce'
+    run_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\Run'
+    run_once_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunOnce'
+    ## RunServices & RunServicesOnce
+    run_services_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunServices'
+    run_services_once_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunServicesOnce'
+    run_services_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunServices'
+    run_services_once_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunServicesOnce'
+    ## policy settings
+    run_policies_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run'
+    run_policies_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run'
+    #Hives
+    hklm_key = winreg.HKEY_LOCAL_MACHINE
+    hku_key = winreg.HKEY_USERS
+
+    #HKLM Run & RunOnce
+    get_registry_persistence(hklm_key,run_subkey_sys,technique,classification,note,reference)
+    get_registry_persistence(hklm_key,run_once_subkey_sys,technique,classification,note,reference)
+
+    #HKU Run & RunOnce
+    get_registry_persistence(hku_key,run_subkey_u,technique,classification,note,reference)
+    get_registry_persistence(hku_key,run_once_subkey_u,technique,classification,note,reference)
+
+    #HKLM RunServices & RunServicesOnce
+    get_registry_persistence(hklm_key,run_services_subkey_sys,technique,classification,note,reference)
+    get_registry_persistence(hklm_key,run_services_once_subkey_sys,technique,classification,note,reference)
+
+    #HKU RunServices & RunServicesOnce
+    get_registry_persistence(hku_key,run_services_subkey_u,technique,classification,note,reference)
+    get_registry_persistence(hku_key,run_services_once_subkey_u,technique,classification,note,reference)
+    
+    #HKU & HKLM Run policy settings
+    get_registry_persistence(hklm_key,run_policies_subkey_sys,technique,classification,note,reference)
+    get_registry_persistence(hku_key,run_policies_subkey_u,technique,classification,note,reference)
+
+
+
+def image_options_persistence():
+    note='executables in the Debugger property of a subkey of (HKLM|HKEY_USERS<SID>)\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\ are run instead of the program corresponding to the subkey. Gained access depends on whose context the debugged process runs in;'
+    reference='https://attack.mitre.org/techniques/T1546/012/'
+    technique='Image File Execution Options Injection'
+    classification='MITRE ATT&CK T1546.012'
+
+    image_options_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
+    image_options_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
+    hklm_key = winreg.HKEY_LOCAL_MACHINE
+    hku_key = winreg.HKEY_USERS
+
+    try:
+        key_index = 0
+        while True:
+            RunOnceEx_key = winreg.OpenKey(hklm_key, image_options_subkey_sys)
+            key_name = winreg.EnumKey(RunOnceEx_key, key_index)
+            final_key =  f"{image_options_subkey_sys}\\{key_name}"
+            get_registry_persistence(hklm_key,final_key,technique,classification,note,reference)
+            key_index += 1
+    except Exception:
+        pass
+    
+    #HKU may be useless and currently not optimised
+    for sid in users_sids:
+        try:
+            key_index = 0
+            while True:
+                RunOnceEx_key = winreg.OpenKey(hku_key, sid+image_options_subkey_u)
+                key_name = winreg.EnumKey(RunOnceEx_key, key_index)
+                final_key =  f"{image_options_subkey_u}\\{key_name}"
+                get_registry_persistence(hku_key,final_key,technique,classification,note,reference)
+                key_index += 1
+        except Exception:
+            pass
+
+
+    pass
+
 
 def persistence_object_to_string(persistence_objects):
         print("Hostname:", persistence_objects['Hostname'])
@@ -346,37 +463,10 @@ get_all_sids()
 
 
 if __name__ == "__main__":
-    executable = 'cmd.exe /c echo Hello, World!'
-    print(f"Full CMD: {executable}")
-
-    cmdline = get_executable_from_command_line(executable)
-    print(f"CMDLINE: {cmdline}")
-    print(get_executable_from_command_line("cmd.exe C:\Windows\Script.bat"))
-
-
-    executable2 = 'cmd.exe'
-    is_lolbin = get_if_lolbin(cmdline)
-    print(f"is_lolbin? {is_lolbin}")
-
-    certificate_info = find_certificate_info(cmdline)
-    print(f"certificate_info: {certificate_info}")
-
-    is_builtin_binary = get_if_builtin_binary(cmdline)
-    print(f"is_builtin_binary: {is_builtin_binary}")
-
-    is_safe_executable = get_if_safe_executable(executable)
-    print(f"is_safe_executable: {is_safe_executable}")
-
-    library = 'C:\Windows\System32\crypt32.dll'
-    is_safe_library = get_if_safe_library(library)
-    print(f"is_safe_library: {is_safe_library}")
-
-    print(f"Hostname: {hostname}")
-
-
-    print(f"Run Keys:")
-    get_run_keys_persistence()
-
+  
+    print(get_executable_from_command_line("evil.dll"))
+    #get_run_keys_persistence()
+    get_persistence_for_runonceex()
 
     for persi in persistence_object_array:
         persistence_object_to_string(persi)
