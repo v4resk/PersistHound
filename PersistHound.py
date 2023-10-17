@@ -426,8 +426,6 @@ def get_image_options_persistence():
             key_name = winreg.EnumKey(DebuggerFlag_key, key_index)
             final_key =  f"{image_options_Debugger_subkey_sys}\\{key_name}"
             registry_key = winreg.OpenKey(hklm_key, final_key, 0,winreg.KEY_READ)
-
-            print(final_key)
             try:
                 value, regtype = winreg.QueryValueEx(registry_key, "Debugger")
                 if value:
