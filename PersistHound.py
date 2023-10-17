@@ -375,43 +375,48 @@ def get_run_keys_persistence():
 
 
 
-def image_options_persistence():
+def get_image_options_persistence():
     note='executables in the Debugger property of a subkey of (HKLM|HKEY_USERS<SID>)\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\ are run instead of the program corresponding to the subkey. Gained access depends on whose context the debugged process runs in;'
     reference='https://attack.mitre.org/techniques/T1546/012/'
     technique='Image File Execution Options Injection'
     classification='MITRE ATT&CK T1546.012'
 
-    image_options_subkey_sys = r'Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
-    image_options_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
+    image_options_globalFlag_subkey_sys = r'Software\Microsoft\Windows NT\CurrentVersion\SilentProcessExit'
+    image_options_Debugger_subkey_sys = r'Software\Microsoft\Windows NT\CurrentVersion\SilentProcessExit'
     hklm_key = winreg.HKEY_LOCAL_MACHINE
     hku_key = winreg.HKEY_USERS
 
+    #HKLM
     try:
         key_index = 0
         while True:
-            RunOnceEx_key = winreg.OpenKey(hklm_key, image_options_subkey_sys)
-            key_name = winreg.EnumKey(RunOnceEx_key, key_index)
-            final_key =  f"{image_options_subkey_sys}\\{key_name}"
-            get_registry_persistence(hklm_key,final_key,technique,classification,note,reference)
+            access = "System"
+            GloBalFlag_key = winreg.OpenKey(hklm_key, image_options_globalFlag_subkey_sys)
+            key_name = winreg.EnumKey(GloBalFlag_key, key_index)
+            final_key =  f"{image_options_globalFlag_subkey_sys}\\{key_name}"
+            registry_key = winreg.OpenKey(hklm_key, final_key, 0,winreg.KEY_READ)
+
+            value, regtype = winreg.QueryValueEx(registry_key, "MonitorProcess")
+            if value:
+                #if not get_if_safe_executable(data):
+                if True:
+                    propPath = f"HKLM\\{final_key}\\MonitorProcess"
+                    # Create a new persistence_object
+                    PersistenceObject = new_persistence_object(
+                                hostname=hostname,
+                                technique=technique,
+                                classification=classification,
+                                path=propPath,
+                                value=value,
+                                access_gained=access,
+                                note=note,
+                                reference=reference
+                    )
+                    persistence_object_array.append(PersistenceObject)
             key_index += 1
     except Exception:
         pass
-    
-    #HKU may be useless and currently not optimised
-    for sid in users_sids:
-        try:
-            key_index = 0
-            while True:
-                RunOnceEx_key = winreg.OpenKey(hku_key, sid+image_options_subkey_u)
-                key_name = winreg.EnumKey(RunOnceEx_key, key_index)
-                final_key =  f"{image_options_subkey_u}\\{key_name}"
-                get_registry_persistence(hku_key,final_key,technique,classification,note,reference)
-                key_index += 1
-        except Exception:
-            pass
 
-
-    pass
 
 
 def persistence_object_to_string(persistence_objects):
@@ -464,9 +469,10 @@ get_all_sids()
 
 if __name__ == "__main__":
   
-    print(get_executable_from_command_line("evil.dll"))
-    #get_run_keys_persistence()
+    print(get_executable_from_command_line("cmd.exe /c test.bat"))
+    get_run_keys_persistence()
     get_persistence_for_runonceex()
+    get_image_options_persistence()
 
     for persi in persistence_object_array:
         persistence_object_to_string(persi)
