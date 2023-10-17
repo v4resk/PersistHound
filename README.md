@@ -33,11 +33,11 @@ python PersistHound.py
 
 - [Run Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
 - [RunOnce Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
-- [RunOnceEx Key](https://red.infiltr8.io/windows/persistence/registry/run-keys) ❌
+- [RunOnceEx Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
 - [RunServices Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
 - [RunServicesOnce Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
 - [Windows policy Settings Run Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
-- [Image File Execution Options](https://red.infiltr8.io/windows/persistence/registry/image-file-execution-options) ❌
+- [Image File Execution Options](https://red.infiltr8.io/windows/persistence/registry/image-file-execution-options)
 - Natural Language Development Platform 6 DLL Override Path ❌
 - AEDebug Keys ❌
 - Windows Error Reporting Debugger ❌

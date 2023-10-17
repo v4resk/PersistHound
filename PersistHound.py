@@ -416,7 +416,36 @@ def get_image_options_persistence():
             key_index += 1
     except Exception:
         pass
+    
+    try:
+        key_index = 0
+        while True:
+            access = "System"
+            DebuggerFlag_key = winreg.OpenKey(hklm_key, image_options_Debugger_subkey_sys)
+            key_name = winreg.EnumKey(DebuggerFlag_key, key_index)
+            final_key =  f"{image_options_Debugger_subkey_sys}\\{key_name}"
+            registry_key = winreg.OpenKey(hklm_key, final_key, 0,winreg.KEY_READ)
 
+            value, regtype = winreg.QueryValueEx(registry_key, "Debugger")
+            if value:
+                #if not get_if_safe_executable(data):
+                if True:
+                    propPath = f"HKLM\\{final_key}\\Debugger"
+                    # Create a new persistence_object
+                    PersistenceObject = new_persistence_object(
+                                hostname=hostname,
+                                technique=technique,
+                                classification=classification,
+                                path=propPath,
+                                value=value,
+                                access_gained=access,
+                                note=note,
+                                reference=reference
+                    )
+                    persistence_object_array.append(PersistenceObject)
+            key_index += 1
+    except Exception:
+        pass
 
 
 def persistence_object_to_string(persistence_objects):
