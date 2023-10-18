@@ -137,6 +137,19 @@ def get_if_safe_library(dll_full_path):
 def parse_net_user():
         return 0
 
+def search_after_comma(data):
+    # Split the input string by a comma
+    parts = data.split(',')
+    
+    # Check if there is at least one comma in the string
+    if len(parts) > 1:
+        # Join all parts except the first one (which is before the first comma)
+        result = ','.join(parts[1:])
+        return result.strip()  # Remove leading and trailing whitespace
+    else:
+        # If there are no commas, return an empty string
+        return None
+
 
 def get_registry_key_values(hive,sid,key_name):
     count = 0
@@ -172,8 +185,8 @@ def get_registry_persistence(hive,subkey,technique,classification,note,reference
             if subkey_value:
                 for name, data in subkey_value.items():
                     propPath = f"HKLM\\{subkey}\\{name}"
-                    #if not get_if_safe_executable(data):
-                    if True:
+                    if not get_if_safe_executable(data):
+                    #if True:
                         # Create a new persistence_object
                         PersistenceObject = new_persistence_object(
                             hostname=hostname,
@@ -197,8 +210,8 @@ def get_registry_persistence(hive,subkey,technique,classification,note,reference
                 if subkey_value:
                     for name, data in subkey_value.items():
                         propPath = f"HKU\\{sid}{subkey}\\{name}"
-                        #if not get_if_safe_executable(data):
-                        if True:    
+                        if not get_if_safe_executable(data):
+                        #if True:    
                             # Create a new persistence_object
                                 PersistenceObject = new_persistence_object(
                                     hostname=hostname,
@@ -247,8 +260,7 @@ def get_persistence_for_runonceex():
                 if runonceex_values_depend:
                         for name, data in runonceex_values_depend.items():
                             propPath = f"HKLM\\{runonceex_subkey_sys}\\{key_name}\\Depend\\{name}"
-                            #if not get_if_safe_executable(data):
-                            if True:
+                            if not get_if_safe_library(data):
                                 # Create a new persistence_object
                                 PersistenceObject = new_persistence_object(
                                 hostname=hostname,
@@ -286,8 +298,8 @@ def get_persistence_for_runonceex():
                 if runonceex_values:
                     for name, data in runonceex_values.items():
                         propPath = f"HKU\\{sid}{runonceex_subkey_u}\\{key_name}\\{name}"
-                        #if not get_if_safe_executable(data):
-                        if True:
+                        if not get_if_safe_executable(data):
+                        #if True:
                             # Create a new persistence_object
                             PersistenceObject = new_persistence_object(
                                 hostname=hostname,
@@ -306,8 +318,8 @@ def get_persistence_for_runonceex():
                     if runonceex_values_depend:
                         for name, data in runonceex_values_depend.items():
                             propPath = f"HKU\\{sid}{runonceex_subkey_u}\\{key_name}\\Depend\\{name}"
-                            #if not get_if_safe_executable(data):
-                            if True:
+                            if not get_if_safe_library(data):
+                            #if True:
                                 # Create a new persistence_object
                                 PersistenceObject = new_persistence_object(
                                     hostname=hostname,
@@ -397,8 +409,8 @@ def get_image_options_persistence():
             try:
                 value, regtype = winreg.QueryValueEx(registry_key, "MonitorProcess")
                 if value:
-                    #if not get_if_safe_executable(data):
-                    if True:
+                    if not get_if_safe_executable(value):
+                    #if True:
                         propPath = f"HKLM\\{final_key}\\MonitorProcess"
                         # Create a new persistence_object
                         PersistenceObject = new_persistence_object(
@@ -429,8 +441,8 @@ def get_image_options_persistence():
             try:
                 value, regtype = winreg.QueryValueEx(registry_key, "Debugger")
                 if value:
-                    #if not get_if_safe_executable(data):
-                    if True:
+                    if not get_if_safe_executable(value):
+                    #if True:
                         propPath = f"HKLM\\{final_key}\\Debugger"
                         # Create a new persistence_object
                         PersistenceObject = new_persistence_object(
@@ -450,6 +462,109 @@ def get_image_options_persistence():
     except Exception:
         pass
 
+def get_winlogon_persistence():
+    note = 'Adversaries may abuse features of Winlogon to execute DLLs and/or executables when a user logs in'
+    reference = 'https://attack.mitre.org/techniques/T1547/004/'
+    technique = 'Winlogon Property'
+    classification = 'MITRE ATT&CK T1547.004'
+
+    sys_sids = ['S-1-5-18', 'S-1-5-19', 'S-1-5-20']
+
+    subkeys = [r'Userinit', r'Shell']
+    win_logon_key = r'Software\Microsoft\Windows NT\CurrentVersion\Winlogon'
+
+    winlogon_notify_subkey_sys = r"Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify"
+    hklm_key = winreg.HKEY_LOCAL_MACHINE
+    hku_key = winreg.HKEY_USERS
+
+    for subkey in subkeys:
+        access = 'System'
+        try:
+            key = winreg.OpenKey(hklm_key,win_logon_key)
+            value,_ = winreg.QueryValueEx(key,subkey)
+            winreg.CloseKey(key)
+
+            if search_after_comma(value):
+                propPath = f"HKLM\\{win_logon_key}\\{subkey}"
+                # Create a new persistence_object
+                PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=propPath,
+                                    value=value,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+                persistence_object_array.append(PersistenceObject)
+
+        except Exception:
+            pass
+
+    for subkey in subkeys:
+        for sid in users_sids:
+            if sid in sys_sids:
+                access = "System"
+            else:
+                access = "User"
+                
+            try:
+                key = winreg.OpenKey(hku_key,sid+"\\"+win_logon_key)
+                value,_ = winreg.QueryValueEx(key,subkey)
+                winreg.CloseKey(key)
+
+                if search_after_comma(value):
+                    propPath = f"HKU\\{sid}\\{win_logon_key}\\{subkey}"
+                    # Create a new persistence_object
+                    PersistenceObject = new_persistence_object(
+                                        hostname=hostname,
+                                        technique=technique,
+                                        classification=classification,
+                                        path=propPath,
+                                        value=value,
+                                        access_gained=access,
+                                        note=note,
+                                        reference=reference
+                            )
+                    persistence_object_array.append(PersistenceObject)
+
+            except Exception:
+                pass
+
+    try:
+        key_index = 0
+        while True:
+            access = "System"
+            notify_key = winreg.OpenKey(hklm_key, winlogon_notify_subkey_sys)
+            key_name = winreg.EnumKey(notify_key, key_index)
+            final_key =  f"{winlogon_notify_subkey_sys}\\{key_name}"
+            registry_key = winreg.OpenKey(hklm_key, final_key, 0,winreg.KEY_READ)
+            try:
+                value, regtype = winreg.QueryValueEx(registry_key, "Dllname")
+                if value:
+                    if not get_if_safe_library(value):
+                    #if True:
+                        propPath = f"HKLM\\{final_key}\\Dllname"
+                        # Create a new persistence_object
+                        PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=propPath,
+                                    value=value,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+                        persistence_object_array.append(PersistenceObject)
+            except Exception:
+                pass
+            key_index += 1
+    except Exception:
+        pass
+
+    
 
 def persistence_object_to_string(persistence_objects):
         print("Hostname:", persistence_objects['Hostname'])
@@ -497,15 +612,15 @@ users_sids = []
 get_all_sids()
 
 
-
-
 if __name__ == "__main__":
   
     #print(get_executable_from_command_line("cmd.exe /c test.bat"))
-    #get_run_keys_persistence()
-    #get_persistence_for_runonceex()
+    get_run_keys_persistence()
+    get_persistence_for_runonceex()
     get_image_options_persistence()
+    get_winlogon_persistence()
 
+    print()
     for persi in persistence_object_array:
         persistence_object_to_string(persi)
 
