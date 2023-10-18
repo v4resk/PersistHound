@@ -1,7 +1,7 @@
 import subprocess
 import re
 import os
-import ctypes
+import win32com.client
 import winreg
 
 
@@ -95,16 +95,20 @@ def get_if_lolbin(executable):
     return False
 
 def find_certificate_info(executable):
+    print(f"From find_cert: {executable}")
     if executable == None:
         return None
     try:
-        powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").SignerCertificate.Subject"'
+        powershell_command = f'powershell.exe -Command \'(Get-AuthenticodeSignature "{executable}").SignerCertificate.Subject\''
+        print(powershell_command)
         subject = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None ).strip()
 
-        powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").Status"'
+        powershell_command = f'powershell.exe -Command \'(Get-AuthenticodeSignature "{executable}").Status\''
+        print(powershell_command)
         status = subprocess.check_output(powershell_command, shell=True, text=True ,stderr=None).strip()
 
         formatted_string = f"Status = {status}, Subject = {subject}"
+        print(formatted_string)
         return formatted_string
 
     except subprocess.CalledProcessError as e:
@@ -114,7 +118,7 @@ def get_if_builtin_binary(executable):
     if executable == None:
         return None
     try:
-        powershell_command = f'powershell -Command "(Get-AuthenticodeSignature \\"{executable}\\").IsOSBinary"'
+        powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\").IsOSBinary"'
         result = subprocess.check_output(powershell_command, shell=True, text=True).strip()
 
         # If the PowerShell command returns 'True', it's a built-in binary; otherwise, it's not.
@@ -241,10 +245,6 @@ def get_persistence_for_runonceex():
     runonceex_subkey_u = r'\Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
     hklm_key = winreg.HKEY_LOCAL_MACHINE
     hku_key = winreg.HKEY_USERS
-
-    depend_to_check = {}
-
-    #get_registry_persistence(hku_key,runonceex_subkey_u,technique,classification,note,reference)
 
     #HKLM
     try:
@@ -564,7 +564,73 @@ def get_winlogon_persistence():
     except Exception:
         pass
 
-    
+
+def get_wmi_events_subscription():
+    wmi = win32com.client.GetObject("winmgmts:\\root\\Subscription")
+    note = 'WMI Events subscriptions can be used to link script/command executions to specific events. Here we list the active consumer events, but you may want to review also existing Filters (with Get-WMIObject -Namespace root\Subscription -Class __EventFilter) and Bindings (with Get-WMIObject -Namespace root\Subscription -Class __FilterToConsumerBinding)'
+    reference = 'https://attack.mitre.org/techniques/T1546/003/'
+    technique = 'WMI Event Subscription'
+    classification = 'MITRE ATT&CK T1546.003'
+
+    # Get CommandLineEventConsumer objects
+    cmd_event_consumers = wmi.ExecQuery("SELECT * FROM CommandLineEventConsumer")
+    for cmd_entry in cmd_event_consumers:
+        path = cmd_entry.Path_.Path
+        access = 'System'
+        value = f"CommandLineTemplate: {cmd_entry.CommandLineTemplate} / ExecutablePath: {cmd_entry.ExecutablePath}"
+        PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=None,
+                                    value=value,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+        persistence_object_array.append(PersistenceObject)
+
+    # Get ActiveScriptEventConsumer objects
+    script_event_consumers = wmi.ExecQuery("SELECT * FROM ActiveScriptEventConsumer")
+    for script_entry in script_event_consumers:
+        path = script_entry.Path_.Path
+        access = 'System'
+        value = f"ScriptingEngine: {script_entry.ScriptingEngine} / ScriptFileName: {script_entry.ScriptFileName} / ScriptText: {script_entry.ScriptText}"
+        PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=path,
+                                    value=value,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+        persistence_object_array.append(PersistenceObject)
+
+def get_windows_services():
+    services = win32com.client.GetObject("winmgmts:").ExecQuery("SELECT Name,DisplayName,State,PathName FROM Win32_Service")
+    note = 'Adversaries may create or modify Windows services to repeatedly execute malicious payloads as part of persistence. When Windows boots up, it starts programs or applications called services that perform background system functions.'
+    reference = 'https://attack.mitre.org/techniques/T1543/003/'
+    technique = 'Windows Service'
+    classification = 'MITRE ATT&CK T1543.003'
+    access = 'system'
+
+    for service in services:
+        executable = get_executable_from_command_line(service.PathName)
+        if not get_if_safe_executable(service.PathName):
+            PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=executable,
+                                    value=service.PathName,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+            persistence_object_array.append(PersistenceObject)
+
 
 def persistence_object_to_string(persistence_objects):
         print("Hostname:", persistence_objects['Hostname'])
@@ -619,6 +685,8 @@ if __name__ == "__main__":
     get_persistence_for_runonceex()
     get_image_options_persistence()
     get_winlogon_persistence()
+    get_wmi_events_subscription()
+    get_windows_services()
 
     print()
     for persi in persistence_object_array:
