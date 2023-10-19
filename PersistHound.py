@@ -95,20 +95,16 @@ def get_if_lolbin(executable):
     return False
 
 def find_certificate_info(executable):
-    print(f"From find_cert: {executable}")
     if executable == None:
         return None
     try:
         powershell_command = f'powershell.exe -Command \'(Get-AuthenticodeSignature "{executable}").SignerCertificate.Subject\''
-        print(powershell_command)
         subject = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None ).strip()
 
         powershell_command = f'powershell.exe -Command \'(Get-AuthenticodeSignature "{executable}").Status\''
-        print(powershell_command)
         status = subprocess.check_output(powershell_command, shell=True, text=True ,stderr=None).strip()
 
         formatted_string = f"Status = {status}, Subject = {subject}"
-        print(formatted_string)
         return formatted_string
 
     except subprocess.CalledProcessError as e:
