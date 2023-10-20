@@ -56,15 +56,6 @@ def get_executable_from_command_line(path_name):
     except Exception:
         return path_name
 
-    if not os.path.isabs(executable):
-        try:
-            # Use subprocess to find the executable in the system's PATH
-            command_output = subprocess.check_output(['where', executable])
-            executable = command_output.decode().strip()
-        except subprocess.CalledProcessError:
-            executable = None
-
-    return executable
 
 def get_if_lolbin(executable):
     if executable == None:
@@ -111,10 +102,10 @@ def find_certificate_info(executable):
     if executable == None:
         return None
     try:
-        powershell_command = f'powershell.exe -Command \'(Get-AuthenticodeSignature "{executable}").SignerCertificate.Subject\''
+        powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).SignerCertificate.Subject"'
         subject = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None ).strip()
 
-        powershell_command = f'powershell.exe -Command \'(Get-AuthenticodeSignature "{executable}").Status\''
+        powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).Status"'
         status = subprocess.check_output(powershell_command, shell=True, text=True ,stderr=None).strip()
 
         formatted_string = f"Status = {status}, Subject = {subject}"
@@ -127,11 +118,15 @@ def get_if_builtin_binary(executable):
     if executable == None:
         return None
     try:
-        powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\").IsOSBinary"'
-        result = subprocess.check_output(powershell_command, shell=True, text=True).strip()
+        powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).IsOSBinary"'
+        result_isOsBinary = subprocess.check_output(powershell_command, shell=True, text=True).strip()
+
+        result_cert = find_certificate_info(executable)
+        result_cert_valide = result_cert.startswith("Status = Valid")
+        result_cert_MicroSoft = "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" in result_cert
 
         # If the PowerShell command returns 'True', it's a built-in binary; otherwise, it's not.
-        return result.lower() == 'true'
+        return result_isOsBinary.lower() == 'true' or (result_cert_valide and result_cert_MicroSoft)
 
     except Exception as e:
         return False
@@ -641,6 +636,58 @@ def get_windows_services():
                             )
                 persistence_object_array.append(PersistenceObject)
 
+def get_scheduled_tasks():
+
+    note = 'Adversaries may create or modify scheduled tasks to repeatedly execute malicious payloads as part of persistence. Scheduled tasks allow users to run programs or scripts at predefined times or intervals.'
+    reference = 'https://attack.mitre.org/techniques/T1053/'
+    technique = 'Scheduled Task'
+    classification = 'MITRE ATT&CK T1053'
+
+    scheduler = win32com.client.Dispatch('Schedule.Service')
+    scheduler.Connect()
+    root_folder = scheduler.GetFolder('\\')
+    tasks = root_folder.GetTasks(0)
+
+    for task in tasks:
+        if task.Path:
+            author, run_as_user = get_task_users(task)
+            value = get_task_actions(task)
+            access = f"runAs: {run_as_user} / Author: {author}"
+            if not get_if_safe_executable(value):
+                PersistenceObject = new_persistence_object(
+                                        hostname=hostname,
+                                        technique=technique,
+                                        classification=classification,
+                                        path=task.Path,
+                                        value=value,
+                                        access_gained=access,
+                                        note=note,
+                                        reference=reference
+                )
+                persistence_object_array.append(PersistenceObject)
+
+
+def get_task_actions(task):
+    # Get the task definition
+    task_def = task.Definition
+
+    # Initialize an empty list to store task actions
+    task_actions = []
+
+    # Loop through the task definition's actions
+    for action in task_def.Actions:
+        if action.Type == 0:  # 0 corresponds to "Execute" action
+            task_actions.append(action.Path)
+
+    return " / ".join(task_actions)  # Join multiple actions with newlines
+
+def get_task_users(task):
+    task_def = task.Definition
+    principal = task_def.Principal
+    author = principal.UserId
+    run_as_user = principal.RunLevel
+    return author, run_as_user
+
 
 def persistence_object_to_string(persistence_objects):
         print("Hostname:", persistence_objects['Hostname'])
@@ -697,6 +744,7 @@ if __name__ == "__main__":
     get_winlogon_persistence()
     get_wmi_events_subscription()
     get_windows_services()
+    get_scheduled_tasks()
 
     print()
     for persi in persistence_object_array:

@@ -39,6 +39,7 @@ python PersistHound.py
 - [Winlogon Notify Packages DLL](https://red.infiltr8.io/windows/persistence/registry/winlogon)
 - [WMI Subscriptions](https://red.infiltr8.io/windows/persistence/wmi-event-subscription)
 - [Windows Services](https://attack.mitre.org/techniques/T1543/003/)
+- [Scheduled Tasks](https://attack.mitre.org/techniques/T1053/)
 - Natural Language Development Platform 6 DLL Override Path ❌
 - AEDebug Keys ❌
 - Windows Error Reporting Debugger ❌
@@ -70,7 +71,6 @@ python PersistHound.py
 - Silent Exit Monitor ❌
 - Telemetry Controller ❌
 - RDP WDS Startup Programs ❌
-- Scheduled Tasks ❌
 - BITS Jobs NotifyCmdLine ❌
 - Power Automate ❌
 - Screensaver ❌
