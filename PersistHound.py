@@ -689,6 +689,53 @@ def get_task_users(task):
     return author, run_as_user
 
 
+def get_startup_folder():
+    note = 'Placing a program within a startup folder will also cause that program to execute when a user logs in.'
+    reference = 'https://attack.mitre.org/techniques/T1053/'
+    technique = 'Startup Folder'
+    classification = 'MITRE ATT&CK T1547.001'
+    access= 'User'
+
+    user_directories = os.listdir('C:\\Users\\')
+    for directory in user_directories:
+        full_path = os.path.join('C:\\Users\\', directory)
+        startup_directory = os.path.join(full_path, 'AppData', 'Roaming', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
+
+        if os.path.exists(startup_directory):
+            for file in os.listdir(startup_directory):
+                rel_path = file
+                if not get_if_safe_executable(rel_path):
+                    PersistenceObject = new_persistence_object(
+                                        hostname=hostname,
+                                        technique=technique,
+                                        classification=classification,
+                                        path=startup_directory,
+                                        value=rel_path,
+                                        access_gained=access,
+                                        note=note,
+                                        reference=reference
+                    )
+                    persistence_object_array.append(PersistenceObject)
+
+    startup_directory = os.path.join('C:\\', 'ProgramData', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
+    access= 'All Users'
+    if os.path.exists(startup_directory):
+            for file in os.listdir(startup_directory):
+                rel_path = file
+                if not get_if_safe_executable(rel_path):
+                    PersistenceObject = new_persistence_object(
+                                        hostname=hostname,
+                                        technique=technique,
+                                        classification=classification,
+                                        path=startup_directory,
+                                        value=rel_path,
+                                        access_gained=access,
+                                        note=note,
+                                        reference=reference
+                    )
+                    persistence_object_array.append(PersistenceObject)
+
+
 def persistence_object_to_string(persistence_objects):
         print("Hostname:", persistence_objects['Hostname'])
         print("Technique:", persistence_objects['Technique'])
@@ -745,6 +792,7 @@ if __name__ == "__main__":
     get_wmi_events_subscription()
     get_windows_services()
     get_scheduled_tasks()
+    get_startup_folder()
 
     print()
     for persi in persistence_object_array:

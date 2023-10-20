@@ -8,7 +8,7 @@
     <img src="https://shields.io/badge/Language-Python-blue?&style=for-the-badge">
   </a>
   <a href="https://github.com/v4resk/PersistHound/">
-    <img src="https://shields.io/badge/Persistence_Techniques-12-blue?&style=for-the-badge">
+    <img src="https://shields.io/badge/Persistence_Techniques-15-blue?&style=for-the-badge">
   </a>
 </p>
 
@@ -40,6 +40,7 @@ python PersistHound.py
 - [WMI Subscriptions](https://red.infiltr8.io/windows/persistence/wmi-event-subscription)
 - [Windows Services](https://attack.mitre.org/techniques/T1543/003/)
 - [Scheduled Tasks](https://attack.mitre.org/techniques/T1053/)
+- [Startup Folders](https://red.infiltr8.io/windows/persistence/logon-triggered)
 - Natural Language Development Platform 6 DLL Override Path ❌
 - AEDebug Keys ❌
 - Windows Error Reporting Debugger ❌
@@ -54,7 +55,6 @@ python PersistHound.py
 - Winlogon MPNotify ❌
 - CHM Helper DLL ❌
 - Hijacking of hhctrl.ocx ❌
-- Startup Folder ❌
 - User Init Mpr Logon Script ❌
 - AutodialDLL Winsock Injection ❌
 - LSA Extensions DLL ❌
