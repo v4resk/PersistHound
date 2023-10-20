@@ -30,18 +30,31 @@ def new_persistence_object(
     return persistence_object
 
 def get_executable_from_command_line(path_name):
-    path_name = os.path.expandvars(path_name).replace('"', '')
+    try:
+        path_name = os.path.expandvars(path_name).replace('"', '')
 
-    match = re.search(r'[A-Za-z0-9\s]+\.(exe|dll|ocx|cmd|bat|ps1)', path_name, re.IGNORECASE)
-    if match:
-        # Grab Index from the re.search() result
-        index = match.start()
+        match = re.search(r'[A-Za-z0-9\s]+\.(exe|dll|ocx|cmd|bat|ps1)', path_name, re.IGNORECASE)
+        if match:
+            # Grab Index from the re.search() result
+            index = match.start()
 
-        # Substring using the index we obtained above
-        things_before_match = path_name[:index]
-        executable = things_before_match + match.group()
-    else:
-        executable = None
+            # Substring using the index we obtained above
+            things_before_match = path_name[:index]
+            executable = things_before_match + match.group()
+        else:
+            executable = None
+
+        if not os.path.isabs(executable):
+            try:
+                # Use subprocess to find the executable in the system's PATH
+                command_output = subprocess.check_output(['where', executable])
+                executable = command_output.decode().strip()
+            except subprocess.CalledProcessError:
+                executable = None
+
+        return executable
+    except Exception:
+        return path_name
 
     if not os.path.isabs(executable):
         try:
@@ -613,19 +626,20 @@ def get_windows_services():
     access = 'system'
 
     for service in services:
-        executable = get_executable_from_command_line(service.PathName)
-        if not get_if_safe_executable(service.PathName):
-            PersistenceObject = new_persistence_object(
-                                    hostname=hostname,
-                                    technique=technique,
-                                    classification=classification,
-                                    path=executable,
-                                    value=service.PathName,
-                                    access_gained=access,
-                                    note=note,
-                                    reference=reference
-                        )
-            persistence_object_array.append(PersistenceObject)
+        if service.PathName:
+            executable = get_executable_from_command_line(service.PathName)
+            if not get_if_safe_executable(service.PathName):
+                PersistenceObject = new_persistence_object(
+                                        hostname=hostname,
+                                        technique=technique,
+                                        classification=classification,
+                                        path=executable,
+                                        value=service.PathName,
+                                        access_gained=access,
+                                        note=note,
+                                        reference=reference
+                            )
+                persistence_object_array.append(PersistenceObject)
 
 
 def persistence_object_to_string(persistence_objects):
