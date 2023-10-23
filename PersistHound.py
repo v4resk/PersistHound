@@ -3,6 +3,7 @@ import re
 import os
 import win32com.client
 import winreg
+import time
 
 
 
@@ -621,15 +622,15 @@ def get_windows_services():
     access = 'system'
 
     for service in services:
-        if service.PathName:
-            executable = get_executable_from_command_line(service.PathName)
-            if not get_if_safe_executable(service.PathName):
+        service_binPath = service.PathName
+        if service_binPath:
+            if not get_if_safe_executable(service_binPath):
                 PersistenceObject = new_persistence_object(
                                         hostname=hostname,
                                         technique=technique,
                                         classification=classification,
-                                        path=executable,
-                                        value=service.PathName,
+                                        path=service.Name,
+                                        value=service_binPath,
                                         access_gained=access,
                                         note=note,
                                         reference=reference
@@ -736,6 +737,136 @@ def get_startup_folder():
                     persistence_object_array.append(PersistenceObject)
 
 
+def get_DLLPathOverride():
+    note = 'DLLs listed in properties of subkeys of (HKLM|HKEY_USERS\<SID>)\SYSTEM\CurrentControlSet\Control\ContentIndex\Language are loaded via LoadLibrary executed by SearchIndexer.exe'
+    reference = 'https://red.infiltr8.io/windows/persistence/registry/natural-language-6-dlls'
+    technique = 'Natural Language Development Platform 6 DLL Override Path'
+    classification = 'MITRE ATT&CK TA0003'
+    access = "System"
+
+    Natural_Language_subkey_sys = r'System\CurrentControlSet\Control\ContentIndex\Language'
+    hklm_key = winreg.HKEY_LOCAL_MACHINE
+
+    try:
+        key_index = 0
+        while True:
+            nl6_keys = winreg.OpenKey(hklm_key, Natural_Language_subkey_sys)
+            key_name = winreg.EnumKey(nl6_keys, key_index)
+            final_key =  f"{Natural_Language_subkey_sys}\\{key_name}"
+            registry_key = winreg.OpenKey(hklm_key, final_key, 0,winreg.KEY_READ)
+            try:
+                value, regtype = winreg.QueryValueEx(registry_key, "StemmerDLLPathOverride")
+                if value:
+                    if not get_if_safe_library(value):
+                    #if True:
+                        propPath = f"HKLM\\{final_key}\\StemmerDLLPathOverride"
+                        # Create a new persistence_object
+                        PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=propPath,
+                                    value=value,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+                        persistence_object_array.append(PersistenceObject)
+            except Exception:
+                pass
+            key_index += 1
+    except Exception:
+        pass
+
+    try:
+        key_index = 0
+        while True:
+            nl6_keys = winreg.OpenKey(hklm_key, Natural_Language_subkey_sys)
+            key_name = winreg.EnumKey(nl6_keys, key_index)
+            final_key =  f"{Natural_Language_subkey_sys}\\{key_name}"
+            registry_key = winreg.OpenKey(hklm_key, final_key, 0,winreg.KEY_READ)
+            try:
+                value, regtype = winreg.QueryValueEx(registry_key, "WBDLLPathOverride")
+                if value:
+                    if not get_if_safe_library(value):
+                    #if True:
+                        propPath = f"HKLM\\{final_key}\\WBDLLPathOverride"
+                        # Create a new persistence_object
+                        PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=propPath,
+                                    value=value,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+                        persistence_object_array.append(PersistenceObject)
+            except Exception:
+                pass
+            key_index += 1
+    except Exception:
+        pass
+
+def get_AEDebug():
+    note = 'DLLs listed in properties of subkeys of (HKLM|HKEY_USERS\<SID>)\SYSTEM\CurrentControlSet\Control\ContentIndex\Language are loaded via LoadLibrary executed by SearchIndexer.exe'
+    reference = 'https://red.infiltr8.io/windows/persistence/registry/aedebug-keys'
+    technique = 'AEDebug Custom Debugger'
+    classification = 'MITRE ATT&CK TA0003'
+    hklm_key = winreg.HKEY_LOCAL_MACHINE
+    access = 'System'
+
+    aedebug_key1 = r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug'
+    aedebug_key2 = r'SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug'
+
+    try:
+        registry_key = winreg.OpenKey(hklm_key, aedebug_key1, 0,winreg.KEY_READ)
+        value, regtype = winreg.QueryValueEx(registry_key, "Debugger")
+        if value:
+                    if not get_if_safe_executable(value):
+                    #if True:
+                        propPath = f"HKLM\\{aedebug_key1}\\Debugger"
+                        # Create a new persistence_object
+                        PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=propPath,
+                                    value=value,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+                        persistence_object_array.append(PersistenceObject)
+    except Exception:
+                pass
+    
+    try:
+        registry_key = winreg.OpenKey(hklm_key, aedebug_key2, 0,winreg.KEY_READ)
+        value, regtype = winreg.QueryValueEx(registry_key, "Debugger")
+        if value:
+                    if not get_if_safe_executable(value):
+                    #if True:
+                        propPath = f"HKLM\\{aedebug_key1}\\Debugger"
+                        # Create a new persistence_object
+                        PersistenceObject = new_persistence_object(
+                                    hostname=hostname,
+                                    technique=technique,
+                                    classification=classification,
+                                    path=propPath,
+                                    value=value,
+                                    access_gained=access,
+                                    note=note,
+                                    reference=reference
+                        )
+                        persistence_object_array.append(PersistenceObject)
+    except Exception:
+                pass
+
+    
+
+
 def persistence_object_to_string(persistence_objects):
         print("Hostname:", persistence_objects['Hostname'])
         print("Technique:", persistence_objects['Technique'])
@@ -783,16 +914,40 @@ get_all_sids()
 
 
 if __name__ == "__main__":
-  
-    #print(get_executable_from_command_line("cmd.exe /c test.bat"))
+
     get_run_keys_persistence()
+    #print("get_run_keys_persistence - done")
+
     get_persistence_for_runonceex()
+    #print("get_persistence_for_runonceex - done")
+
     get_image_options_persistence()
+    #print("get_image_options_persistence - done")
+
     get_winlogon_persistence()
+    #print("get_winlogon_persistence - done")
+    
     get_wmi_events_subscription()
+    #print("get_wmi_events_subscription - done")
+
     get_windows_services()
+    #print("get_windows_services - done")
+    
     get_scheduled_tasks()
+    #print("get_scheduled_tasks - done")
+
     get_startup_folder()
+    #print("get_startup_folder - done")
+
+    #start_time = time.time()
+    
+    get_DLLPathOverride()
+
+    get_AEDebug()
+
+    #end_time = time.time()
+    #elapsed_time = end_time - start_time
+    #print(f"Function took {elapsed_time} seconds to run")
 
     print()
     for persi in persistence_object_array:

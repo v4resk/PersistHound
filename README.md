@@ -8,7 +8,7 @@
     <img src="https://shields.io/badge/Language-Python-blue?&style=for-the-badge">
   </a>
   <a href="https://github.com/v4resk/PersistHound/">
-    <img src="https://shields.io/badge/Persistence_Techniques-15-blue?&style=for-the-badge">
+    <img src="https://shields.io/badge/Persistence_Techniques-17-blue?&style=for-the-badge">
   </a>
 </p>
 
@@ -41,8 +41,8 @@ python PersistHound.py
 - [Windows Services](https://attack.mitre.org/techniques/T1543/003/)
 - [Scheduled Tasks](https://attack.mitre.org/techniques/T1053/)
 - [Startup Folders](https://red.infiltr8.io/windows/persistence/logon-triggered)
-- Natural Language Development Platform 6 DLL Override Path ❌
-- AEDebug Keys ❌
+- [Natural Language Development Platform 6 DLL Override Path](https://red.infiltr8.io/windows/persistence/registry/natural-language-6-dlls)
+- [AEDebug Keys](https://red.infiltr8.io/windows/persistence/registry/aedebug-keys)
 - Windows Error Reporting Debugger ❌
 - Windows Error Reporting ReflectDebugger ❌
 - Command Prompt AutoRun ❌
