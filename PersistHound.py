@@ -848,7 +848,7 @@ def get_AEDebug():
         if value:
                     if not get_if_safe_executable(value):
                     #if True:
-                        propPath = f"HKLM\\{aedebug_key1}\\Debugger"
+                        propPath = f"HKLM\\{aedebug_key2}\\Debugger"
                         # Create a new persistence_object
                         PersistenceObject = new_persistence_object(
                                     hostname=hostname,
