@@ -865,6 +865,45 @@ def get_AEDebug():
                 pass
 
     
+def get_lsa_ssp_ddl():
+    note = 'The DLLs specified in the "Security Packages" property of the (HKLM|HKEY_USERS\<SID>)\SYSTEM\CurrentControlSet\Control\Lsa\ key are loaded by LSASS at machine boot.'
+    reference = 'https://attack.mitre.org/techniques/T1547/005/'
+    technique = 'LSA Security Package DLL'
+    classification = 'MITRE ATT&CK T1547.005'
+    hklm_key = winreg.HKEY_LOCAL_MACHINE
+    access = 'System'
+
+    sec_pckgs = [r'SYSTEM\CurrentControlSet\Control\Lsa', r'SYSTEM\CurrentControlSet\Control\Lsa\OSConfig']
+
+    for sec_pck in sec_pckgs:
+        try:
+            registry_key = winreg.OpenKey(hklm_key, sec_pck, 0,winreg.KEY_READ)
+            values, regtype = winreg.QueryValueEx(registry_key, "Security Packages")
+            
+            for dll in values:
+                if dll == "":
+                    continue
+                if not dll.startswith(r"C:\\"):
+                    dll_path = f"C:\Windows\System32\{dll}.dll"
+                    if not get_if_safe_library(dll_path):
+                        #if True:
+                            propPath = f"HKLM\\{sec_pck}\\Security Packages"
+                            # Create a new persistence_object
+                            PersistenceObject = new_persistence_object(
+                                        hostname=hostname,
+                                        technique=technique,
+                                        classification=classification,
+                                        path=propPath,
+                                        value=dll_path,
+                                        access_gained=access,
+                                        note=note,
+                                        reference=reference
+                            )
+                            persistence_object_array.append(PersistenceObject)
+        except Exception as e:
+                    print(e)
+                    pass
+
 
 
 def persistence_object_to_string(persistence_objects):
@@ -942,8 +981,13 @@ if __name__ == "__main__":
     #start_time = time.time()
     
     get_DLLPathOverride()
+    #print("get_DLLPathOverride - done")
 
     get_AEDebug()
+    #print("get_AEDebug - done")
+
+    get_lsa_ssp_ddl()
+    #print("get_lsa_ssp_ddl - done")
 
     #end_time = time.time()
     #elapsed_time = end_time - start_time

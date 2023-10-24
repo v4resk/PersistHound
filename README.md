@@ -26,23 +26,26 @@ python PersistHound.py
 
 # Persistence Techniques Detected
 
-- [Run Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
-- [RunOnce Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
-- [RunOnceEx Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
-- [RunServices Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
-- [RunServicesOnce Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
-- [Windows policy Settings Run Key](https://red.infiltr8.io/windows/persistence/registry/run-keys)
-- [Image File Execution Options - Debugger](https://red.infiltr8.io/windows/persistence/registry/image-file-execution-options)
-- [Image File Execution Options - GlobalFlag](https://red.infiltr8.io/windows/persistence/registry/image-file-execution-options)
-- [Winlogon Userinit](https://red.infiltr8.io/windows/persistence/registry/winlogon)
-- [Winlogon Shell](https://red.infiltr8.io/windows/persistence/registry/winlogon)
-- [Winlogon Notify Packages DLL](https://red.infiltr8.io/windows/persistence/registry/winlogon)
+- [Run Key](https://red.infiltr8.io/windows/persistence/run-keys)
+- [RunOnce Key](https://red.infiltr8.io/windows/persistence/run-keys)
+- [RunOnceEx Key](https://red.infiltr8.io/windows/persistence/run-keys)
+- [RunServices Key](https://red.infiltr8.io/windows/persistence/run-keys)
+- [RunServicesOnce Key](https://red.infiltr8.io/windows/persistence/run-keys)
+- [Windows policy Settings Run Key](https://red.infiltr8.io/windows/persistence/run-keys)
+- [Image File Execution Options - Debugger](https://red.infiltr8.io/windows/persistence/image-file-execution-options)
+- [Image File Execution Options - GlobalFlag](https://red.infiltr8.io/windows/persistence/image-file-execution-options)
+- [Winlogon Userinit](https://red.infiltr8.io/windows/persistence/winlogon)
+- [Winlogon Shell](https://red.infiltr8.io/windows/persistence/winlogon)
+- [Winlogon Notify Packages DLL](https://red.infiltr8.io/windows/persistence/winlogon)
 - [WMI Subscriptions](https://red.infiltr8.io/windows/persistence/wmi-event-subscription)
 - [Windows Services](https://attack.mitre.org/techniques/T1543/003/)
 - [Scheduled Tasks](https://attack.mitre.org/techniques/T1053/)
 - [Startup Folders](https://red.infiltr8.io/windows/persistence/logon-triggered)
-- [Natural Language Development Platform 6 DLL Override Path](https://red.infiltr8.io/windows/persistence/registry/natural-language-6-dlls)
-- [AEDebug Keys](https://red.infiltr8.io/windows/persistence/registry/aedebug-keys)
+- [Natural Language Development Platform 6 DLL Override Path](https://red.infiltr8.io/windows/persistence/natural-language-6-dlls)
+- [AEDebug Keys](https://red.infiltr8.io/windows/persistence/aedebug-keys)
+- [LSA SSP DLLs]() ❌
+- LSA Authentication Packages DLL ❌
+- LSA Extensions DLL ❌
 - Windows Error Reporting Debugger ❌
 - Windows Error Reporting ReflectDebugger ❌
 - Command Prompt AutoRun ❌
@@ -57,10 +60,7 @@ python PersistHound.py
 - Hijacking of hhctrl.ocx ❌
 - User Init Mpr Logon Script ❌
 - AutodialDLL Winsock Injection ❌
-- LSA Extensions DLL ❌
 - ServerLevelPluginDll DNS Server DLL Hijacking ❌
-- LSA Authentication Packages DLL ❌
-- LSA Security Packages DLL ❌
 - Explorer Tools Hijacking ❌
 - .NET DbgManagedDebugger ❌
 - ErrorHandler.cmd Hijacking ❌
