@@ -8,7 +8,7 @@
     <img src="https://shields.io/badge/Language-Python-blue?&style=for-the-badge">
   </a>
   <a href="https://github.com/v4resk/PersistHound/">
-    <img src="https://shields.io/badge/Persistence_Techniques-17-blue?&style=for-the-badge">
+    <img src="https://shields.io/badge/Persistence_Techniques-18-blue?&style=for-the-badge">
   </a>
 </p>
 
@@ -43,7 +43,7 @@ python PersistHound.py
 - [Startup Folders](https://red.infiltr8.io/windows/persistence/logon-triggered)
 - [Natural Language Development Platform 6 DLL Override Path](https://red.infiltr8.io/windows/persistence/natural-language-6-dlls)
 - [AEDebug Keys](https://red.infiltr8.io/windows/persistence/aedebug-keys)
-- [LSA SSP DLLs]() ❌
+- [LSA SSP DLLs](https://red.infiltr8.io/windows/persistence/lsa/security-support-provider-dlls)
 - LSA Authentication Packages DLL ❌
 - LSA Extensions DLL ❌
 - Windows Error Reporting Debugger ❌
