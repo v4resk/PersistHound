@@ -4,6 +4,7 @@ import os
 import win32com.client
 import winreg
 import time
+import psutil
 
 
 
@@ -36,10 +37,7 @@ def get_executable_from_command_line(path_name):
 
         match = re.search(r'[A-Za-z0-9\s]+\.(exe|dll|ocx|cmd|bat|ps1)', path_name, re.IGNORECASE)
         if match:
-            # Grab Index from the re.search() result
             index = match.start()
-
-            # Substring using the index we obtained above
             things_before_match = path_name[:index]
             executable = things_before_match + match.group()
         else:
@@ -47,7 +45,6 @@ def get_executable_from_command_line(path_name):
 
         if not os.path.isabs(executable):
             try:
-                # Use subprocess to find the executable in the system's PATH
                 command_output = subprocess.check_output(['where', executable])
                 executable = command_output.decode().strip()
             except subprocess.CalledProcessError:
@@ -94,40 +91,47 @@ def get_if_lolbin(executable):
     
     exe = os.path.basename(executable).upper()
     
-    if exe in lolbins:
-        return True
-    
-    return False
+    return exe in lolbins
+
 
 def find_certificate_info(executable):
-    if executable == None:
+    if not executable:
         return None
+
     try:
         powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).SignerCertificate.Subject"'
-        subject = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None ).strip()
+        subject = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None).strip()
 
         powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).Status"'
-        status = subprocess.check_output(powershell_command, shell=True, text=True ,stderr=None).strip()
+        status = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None).strip()
 
         formatted_string = f"Status = {status}, Subject = {subject}"
         return formatted_string
 
     except subprocess.CalledProcessError as e:
-        return "Unknown error occurred"
+        return "Error Occured"
+        pass
 
 def get_if_builtin_binary(executable):
-    if executable == None:
-        return None
-    try:
-        powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).IsOSBinary"'
-        result_isOsBinary = subprocess.check_output(powershell_command, shell=True, text=True).strip()
+    if not executable:
+        return False
 
+    try:
+        # Check if the executable is in a system directory
+        is_system_binary = any(
+            os.path.dirname(executable).lower() == sys_dir.lower()
+            for sys_dir in os.environ['PATH'].split(os.pathsep)
+        )
+
+        if is_system_binary:
+            return True
+
+        # Additional checks here (e.g., certificate validation)
         result_cert = find_certificate_info(executable)
         result_cert_valide = result_cert.startswith("Status = Valid")
-        result_cert_MicroSoft = "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" in result_cert
+        result_cert_Microsoft = "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" in result_cert
 
-        # If the PowerShell command returns 'True', it's a built-in binary; otherwise, it's not.
-        return result_isOsBinary.lower() == 'true' or (result_cert_valide and result_cert_MicroSoft)
+        return result_cert_valide and result_cert_Microsoft
 
     except Exception as e:
         return False
@@ -614,7 +618,7 @@ def get_wmi_events_subscription():
         persistence_object_array.append(PersistenceObject)
 
 def get_windows_services():
-    services = win32com.client.GetObject("winmgmts:").ExecQuery("SELECT Name,DisplayName,State,PathName FROM Win32_Service")
+    services = win32com.client.GetObject("winmgmts:").ExecQuery("SELECT Name,DisplayName,State,PathName FROM Win32_Service WHERE PathName IS NOT NULL")
     note = 'Adversaries may create or modify Windows services to repeatedly execute malicious payloads as part of persistence. When Windows boots up, it starts programs or applications called services that perform background system functions.'
     reference = 'https://attack.mitre.org/techniques/T1543/003/'
     technique = 'Windows Service'
@@ -623,8 +627,7 @@ def get_windows_services():
 
     for service in services:
         service_binPath = service.PathName
-        if service_binPath:
-            if not get_if_safe_executable(service_binPath):
+        if service_binPath and not get_if_safe_executable(service_binPath):
                 PersistenceObject = new_persistence_object(
                                         hostname=hostname,
                                         technique=technique,
@@ -636,6 +639,30 @@ def get_windows_services():
                                         reference=reference
                             )
                 persistence_object_array.append(PersistenceObject)
+
+def get_windows_services2():
+    note = 'Adversaries may create or modify Windows services to repeatedly execute malicious payloads as part of persistence. When Windows boots up, it starts programs or applications called services that perform background system functions.'
+    reference = 'https://attack.mitre.org/techniques/T1543/003/'
+    technique = 'Windows Service'
+    classification = 'MITRE ATT&CK T1543.003'
+    access = 'system'
+
+    for service in psutil.win_service_iter():
+        service_binPath = service.binpath()
+        service_name = service.name()
+        if not get_if_safe_executable(service_binPath):
+                PersistenceObject = new_persistence_object(
+                                        hostname=hostname,
+                                        technique=technique,
+                                        classification=classification,
+                                        path=service_name,
+                                        value=service_binPath,
+                                        access_gained=access,
+                                        note=note,
+                                        reference=reference
+                            )
+                persistence_object_array.append(PersistenceObject)
+
 
 def get_scheduled_tasks():
 
@@ -954,44 +981,72 @@ get_all_sids()
 
 if __name__ == "__main__":
 
+    time_start = time.perf_counter()
     get_run_keys_persistence()
-    #print("get_run_keys_persistence - done")
-
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_run_keys_persistence took {time_duration:.3f} seconds')
+    
+    time_start = time.perf_counter()
     get_persistence_for_runonceex()
-    #print("get_persistence_for_runonceex - done")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_persistence_for_runonceex took {time_duration:.3f} seconds')
 
+    time_start = time.perf_counter()
     get_image_options_persistence()
-    #print("get_image_options_persistence - done")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_image_options_persistence took {time_duration:.3f} seconds')
 
+    time_start = time.perf_counter()
     get_winlogon_persistence()
-    #print("get_winlogon_persistence - done")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_winlogon_persistence took {time_duration:.3f} seconds')
     
+    time_start = time.perf_counter()
     get_wmi_events_subscription()
-    #print("get_wmi_events_subscription - done")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_wmi_events_subscription took {time_duration:.3f} seconds')
 
+    time_start = time.perf_counter()
     get_windows_services()
-    #print("get_windows_services - done")
-    
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_windows_services took {time_duration:.3f} seconds')
+
+    time_start = time.perf_counter()    
     get_scheduled_tasks()
-    #print("get_scheduled_tasks - done")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_scheduled_tasks took {time_duration:.3f} seconds')
 
+    time_start = time.perf_counter()
     get_startup_folder()
-    #print("get_startup_folder - done")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_startup_folder took {time_duration:.3f} seconds')
 
-    #start_time = time.time()
-    
+ 
+    time_start = time.perf_counter()    
     get_DLLPathOverride()
-    #print("get_DLLPathOverride - done")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_DLLPathOverride took {time_duration:.3f} seconds')
 
+    time_start = time.perf_counter()
     get_AEDebug()
-    #print("get_AEDebug - done")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_AEDebug took {time_duration:.3f} seconds')
 
+    time_start = time.perf_counter()
     get_lsa_ssp_ddl()
-    #print("get_lsa_ssp_ddl - done")
-
-    #end_time = time.time()
-    #elapsed_time = end_time - start_time
-    #print(f"Function took {elapsed_time} seconds to run")
+    time_end = time.perf_counter()
+    time_duration = time_end - time_start
+    #print(f'get_lsa_ssp_ddl took {time_duration:.3f} seconds')
 
     print()
     for persi in persistence_object_array:
