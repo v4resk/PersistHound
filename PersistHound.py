@@ -99,10 +99,10 @@ def find_certificate_info(executable):
         return None
 
     try:
-        powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).SignerCertificate.Subject"'
+        powershell_command = f'chcp 65001 |powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).SignerCertificate.Subject"'
         subject = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None).strip()
 
-        powershell_command = f'powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).Status"'
+        powershell_command = f'chcp 65001 |powershell.exe -Command "(Get-AuthenticodeSignature \\"{executable}\\" -ErrorAction SilentlyContinue).Status"'
         status = subprocess.check_output(powershell_command, shell=True, text=True, stderr=None).strip()
 
         formatted_string = f"Status = {status}, Subject = {subject}"
